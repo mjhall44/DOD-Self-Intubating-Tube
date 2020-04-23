@@ -1,3 +1,24 @@
+//final CO2 Sensor algo
+//feel free to add anything
+
+//COZIR sensor initialization
+#include <SoftwareSerial.h>
+SoftwareSerial mySerial(12, 13); // RX, TX pins on Ardunio
+
+//global variables
+int co2 =0;
+double multiplier = 1;// 1 for 2% =20000 PPM, 10 for 20% = 200,000 PPM
+double prev[3];
+uint8_t buffer[25];
+uint8_t ind =0;
+uint8_t index =0;
+
+int fill_buffer();  // function prototypes here
+int format_output();
+
+
+
+//copyrights
 /*
 AN128_ardunio_cozir CO2 Demonstration code 11/29/2017 Runs on Ardunio UNO, MEGA or MEGA2560
   Written by: Marv Kausch 11/22/2016 or Co2meter.com
@@ -14,27 +35,16 @@ AN128_ardunio_cozir CO2 Demonstration code 11/29/2017 Runs on Ardunio UNO, MEGA 
     13 -------------------- 5 (Rx)
     12 -------------------- 7 (Tx)
 */
-//Edits for senior design
-// Some print out changing 
-// made code work natively with our system
-// last edit2/24
 
-#include <SoftwareSerial.h>
-
-SoftwareSerial mySerial(12, 13); // RX, TX pins on Ardunio
-
-int co2 =0;
-double multiplier = 1;// 1 for 2% =20000 PPM, 10 for 20% = 200,000 PPM
-double prev[3];
-uint8_t buffer[25];
-uint8_t ind =0;
-uint8_t index =0;
-
-int fill_buffer();  // function prototypes here
-int format_output();
+//Edits by UT BME Team 5 SeniorDesign (Kolby Killion and Matthew Hall)
+// Created previous value buffer for CO2 sensor
+// added variables to ensure accuracy of values
+// lowered refresh rate
+// Last Edit CO2 03/08
 
 void setup() {
-  Serial.begin(9600);
+  // begins CO2 print with test to serial port ONLY
+Serial.begin(9600);
   //Serial.print("\n\n");
   //Serial.println("             AN128 Ardunio to Cozir CO2 Sensor - Demonstration code 11/29/2017\n\n"); 
   mySerial.begin(9600); // Start serial communications with sensor
@@ -44,25 +54,28 @@ void setup() {
 
   mySerial.println("K 1");  // set streaming mode
   fill_buffer();
+
+
+
 }
 
 void loop() {
-  index = 8;
+  // put your main code here, to run repeatedly:
+  index = 8; //filters output to correct value from raw data (binary to PPM)
   while(format_output() < 0){
   delay(20);
   fill_buffer();
   delay(20);
   } 
   Serial.println();
-  fill_buffer();
-  // function call that reacds CO2 sensor and fills buffer
-//    Serial.print("Buffer contains: ");
+  fill_buffer(); // function call that reacds CO2 sensor and fills buffer
+  /* Serial.print("Buffer contains: ");     // Uncomment for raw output
  // for(int j=0; j<ind; j++)Serial.print(buffer[j],HEX);
  index = 0;
- //format_output();
- // Serial.print(" Raw PPM        ");
+ format_output();
+ Serial.print(" Raw PPM        ");
 
-
+*/
  
   index = 8;  // In ASCII buffer, filtered value is offset from raw by 8 bytes
   format_output();
@@ -71,16 +84,15 @@ void loop() {
 }
 
 int fill_buffer(void){
-  
-
 // Fill buffer with sensor ascii data
-ind = 0;
-while(buffer[ind-1] != 0x0A){  // Read sensor and fill buffer up to 0XA = CR
-  if(mySerial.available()){
-    buffer[ind] = mySerial.read();
-    ind++;
-    } 
-  }
+//partially edited from freedomain ascii code (Marv Kausch and Rev by John Houck)
+  ind = 0;
+  while(buffer[ind-1] != 0x0A){  // Read sensor and fill buffer up to 0XA = CR
+    if(mySerial.available()){
+      buffer[ind] = mySerial.read();
+      ind++;
+      } 
+    }
   // buffer() now filled with sensor ascii data
   // ind contains the number of characters loaded into buffer up to 0xA =  CR
   ind = ind -2; // decrement buffer to exactly match last numerical character
@@ -99,5 +111,4 @@ while(buffer[ind-1] != 0x0A){  // Read sensor and fill buffer up to 0XA = CR
 // Serial.print(" PPM,");
 //    Serial.print("\n");
 return co2*multiplier;
-
  }
